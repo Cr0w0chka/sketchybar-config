@@ -6,86 +6,98 @@
 # LOG_LEVEL=<"none"|"info"|"debug"|"vomit">
 ##
 
-## Exports
-
+## Settings & sourcing
 if [[ -n "$SKETCHYBAR_CONFIG" && -f "$SKETCHYBAR_CONFIG" ]]; then
 	source "$SKETCHYBAR_CONFIG"
 elif [[ -f "./config.sh" ]]; then
 	source "./config.sh"
 fi
 
-: "${LOG_LEVEL:="info"}"
+: "${LOG_LEVEL:="none"}"
 : "${COLOR_LOG:=false}"
 
-## Helpers & ressources
-scac='\033[48;5;0;38;5;8m[\033[38;5;1mx\033[38;5;8m]\033[0m' # [x]
-sexc='\033[48;5;0;38;5;8m[\033[38;5;2mo\033[38;5;8m]\033[0m' # [o]
-smak='\033[48;5;0;38;5;8m[\033[38;5;5m+\033[38;5;8m]\033[0m' # [+]
-swrn='\033[48;5;0;38;5;8m[\033[38;5;3m!\033[38;5;8m]\033[0m' # [!]
+if [[ $LOG_LEVEL != "none" ]]; then
 
-errString="$(if $COLOR_LOG; then echo "$scac"; else echo "[Error]"; fi)"
-warnString="$(if $COLOR_LOG; then echo "$swrn"; else echo "[Warn]"; fi)"
-logString="$(if $COLOR_LOG; then echo "$sexc"; else echo "[Info]"; fi)"
+	## Helpers & ressources
+	scac='\033[48;5;0;38;5;8m[\033[38;5;1mx\033[38;5;8m]\033[0m' # [x]
+	sexc='\033[48;5;0;38;5;8m[\033[38;5;2mo\033[38;5;8m]\033[0m' # [o]
+	smak='\033[48;5;0;38;5;8m[\033[38;5;5m+\033[38;5;8m]\033[0m' # [+]
+	swrn='\033[48;5;0;38;5;8m[\033[38;5;3m!\033[38;5;8m]\033[0m' # [!]
 
-__getKeywordLevel() {
-	case "$1" in
-	"none")
-		echo 0
-		;;
-	"info")
-		echo 1
-		;;
-	"debug")
-		echo 2
-		;;
-	"vomit")
-		echo 3
-		;;
-	*)
-		echo 0
-		return 1
-		;;
-	esac
-}
+	errString="$(if $COLOR_LOG; then echo "$scac"; else echo "[Error]"; fi)"
+	warnString="$(if $COLOR_LOG; then echo "$swrn"; else echo "[Warn]"; fi)"
+	logString="$(if $COLOR_LOG; then echo "$sexc"; else echo "[Info]"; fi)"
 
-LOG_LEVEL_INDEX=$(__getKeywordLevel $LOG_LEVEL)
+	# Matches a log level keyboard to a prority index
+	__getKeywordLevel() {
+		case "$1" in
+		"none")
+			echo 0
+			;;
+		"info")
+			echo 1
+			;;
+		"debug")
+			echo 2
+			;;
+		"vomit")
+			echo 3
+			;;
+		*)
+			echo 0
+			return 1
+			;;
+		esac
+	}
 
-## Available functions
-sendErr() {
-	# $1 -> <errMsg>, $2 -> <logLevel>
-	if [ -z $2 ]; then
-		sendErr "No errLevel set for \"$1\"" "none"
-		return 1
-	fi
+	LOG_LEVEL_INDEX=$(__getKeywordLevel $LOG_LEVEL)
 
-	if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
-		# Sends log + date to stderr
-		>&2 echo -e "$errString $(date '+[%H:%M:%S]') $1"
-	fi
-}
+	## Available functions
 
-sendWarn() {
-	# $1 -> <logMsg>, $2 -> <logLevel>
-	if [ -z $2 ]; then
-		sendErr "No errLevel set for \"$1\"" "none"
-		return 1
-	fi
+	# Sends a formated error to stderr depending on set logLevel
+	sendErr() {
+		# $1 -> <errMsg>, $2 -> <logLevel>
+		if [ -z $2 ]; then
+			sendErr "No errLevel set for \"$1\"" "none"
+			return 1
+		fi
 
-	if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
-		# Sends log + date to stdout
-		>&1 echo -e "$warnString $(date '+[%H:%M:%S]') $1"
-	fi
-}
+		if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
+			# Sends log + date to stderr
+			>&2 echo -e "$(date '+[%H:%M:%S]') $errString $1"
+		fi
+	}
 
-sendLog() {
-	# $1 -> <logMsg>, $2 -> <logLevel>
-	if [ -z $2 ]; then
-		sendErr "No errLevel set for \"$1\"" "none"
-		return 1
-	fi
+	# Sends a formated warning to stdout depending on set logLevel
+	sendWarn() {
+		# $1 -> <wrnMsg>, $2 -> <logLevel>
+		if [ -z $2 ]; then
+			sendErr "No errLevel set for \"$1\"" "none"
+			return 1
+		fi
 
-	if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
-		# Sends log + date to stdout
-		>&1 echo -e "$logString $(date '+[%H:%M:%S]') $1"
-	fi
-}
+		if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
+			# Sends Warn + date to stdout
+			>&1 echo -e "$(date '+[%H:%M:%S]') $warnString $1"
+		fi
+	}
+
+	# Sends a formated info to stdout depending on set logLevel
+	sendLog() {
+		# $1 -> <logMsg>, $2 -> <logLevel>
+		if [ -z $2 ]; then
+			sendErr "No errLevel set for \"$1\"" "none"
+			return 1
+		fi
+
+		if [ $LOG_LEVEL_INDEX -ge $(__getKeywordLevel "$2") ]; then # If current log level is higher or equal to function's log level, display message
+			# Sends log + date to stdout
+			>&1 echo -e "$(date '+[%H:%M:%S]') $logString $1"
+		fi
+	}
+
+else
+	sendErr() { :; }
+	sendWarn() { :; }
+	sendLog() { :; }
+fi

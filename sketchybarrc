@@ -67,7 +67,8 @@ fi
 
 [[ -f ./dyn-icon_map.sh ]] && sendLog "Found dyn-icon_map.sh, using instead." "vomit"
 
-command -v 'menubar' 2>/dev/null 1>&2 && sendWarn "Binary \`menubar\` not in \$PATH, using bundled version" "debug"
+command -v 'menubar' 2>/dev/null 1>&2 || sendWarn "Binary \`menubar\` not in \$PATH, using bundled version" "debug"
+menubarImportCmd="command -v 'menubar' 2>/dev/null 1>&2 || alias menubar=\"$RELPATH/menubar\""
 
 FONT="SF Pro"
 OUTER_PADDINGS=5
@@ -78,25 +79,26 @@ case ${BAR_LOOK} in
 "plain")
 	BAR_HEIGHT=34
 	BAR_MARGIN=5
-	if [ $(echo $OS_VERSION | awk -F. '{print $1}') -gt 15 ]; then
-		BAR_CORNER_RADIUS=15
-	else
-		BAR_CORNER_RADIUS=13
-	fi
 	;;
 "compact")
-	BAR_HEIGHT=30
-	BAR_MARGIN=0
-	BAR_CORNER_RADIUS=4
+	BAR_HEIGHT=27
 	;;
 esac
+
+if [ "$(echo "$OS_VERSION" | awk -F. '{print $1}')" -gt 15 ]; then
+	BAR_CORNER_RADIUS=15
+else
+	BAR_CORNER_RADIUS=13
+fi
 
 bar=(
 	height=$BAR_HEIGHT
 	y_offset=$BAR_MARGIN
 	margin=$BAR_MARGIN
-	shadow=on
-	shadow.color=$SHADOW_COLOR
+	#shadow=on
+	#shadow.color=$SHADOW_COLOR
+	#shadow.angle=45
+	#shadow.distance=2
 	padding_left=0
 	padding_right=$X_BAR_PADDING
 	color="$BAR_COLOR"
